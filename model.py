@@ -8,7 +8,13 @@ from torch.utils.data import Dataset, DataLoader
 import os
 import random
 from PIL import Image
+import torchvision.transforms.functional as F
+import matplotlib.pyplot as plt
 from tqdm.notebook import tqdm
+
+from imagePool import ImagePool
+from resnetGen import ResnetGenerator
+from nlayerDis import NLayerDiscriminator
 
 
 # Define Device
@@ -27,7 +33,6 @@ TEST_DATA_DIR = "data/Assignment_4/Test/Test"
 
 TRAIN_SKETCH_DIR = "data/Assignment_4/Train/Contours"
 TEST_SKETCH_DIR = "data/Assignment_4/Test/Test_contours"
-
 # Create Dataset
 class ISICDataset(Dataset):
     def __init__(self, datadir, csvpath, sketchdir, transform=None):
@@ -37,7 +42,7 @@ class ISICDataset(Dataset):
         self.transform = transform
 
     def __len__(self):
-        return len(self.csv.index)
+        return len(self.csv[:3000])
 
     def __getitem__(self, index):
         img_path = os.path.join(self.datadir, self.csv.iloc[index, 0] + ".jpg")
@@ -52,7 +57,7 @@ class ISICDataset(Dataset):
         sketch_path = os.path.join(self.sketchdir, sketch_name)
         fs, ext = os.path.splitext(sketch_path)
 
-        while ext not in ['.jpg', '.jpeg']:
+        while ext not in ['.jpg', '.jpeg', '.png']:
           sketch_name = random.choice(os.listdir(self.sketchdir))
           sketch_path = os.path.join(self.sketchdir, sketch_name)
           fs, ext = os.path.splitext(sketch_path)
@@ -73,233 +78,204 @@ transform = transforms.Compose([
 
 # Train Dataset and Dataloader
 train_dataset = ISICDataset(TRAIN_DATA_DIR, TRAIN_LABELS, TRAIN_SKETCH_DIR, transform=transform)
-train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True, num_workers=2)
+train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=2)
 
 # Train Dataset and Dataloader
 test_dataset = ISICDataset(TEST_DATA_DIR, TEST_LABELS, TEST_SKETCH_DIR, transform=transform)
-test_dataloader = DataLoader(test_dataset, batch_size=8, shuffle=True, num_workers=2)
+test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True, num_workers=2)
 
 """
 END
 """
 
-for batch_labels, batch_images, batch_sketches in train_dataloader:
-    print("Batch Image Shape:", batch_images.shape) # (8,3,64,64)
-    print("Batch Label Shape:", batch_labels.shape) # (8,7)
-    print("Batch Sketch Shape:", batch_sketches.shape) # (8,1,64,64)
-    break  # Only print the shape of the first batch
+def show(r_img, c_limage, fake_img):
+    fig, axes = plt.subplots(1, 3, figsize=(5, 6))
+       
+    r_img = r_img.squeeze(0)
+    c_limage = c_limage.squeeze(0)
+    fake_img = fake_img.squeeze(0)
+    
+    r_img = r_img.detach()
+    r_img = F.to_pil_image(r_img)
+    axes[0].imshow(r_img)
+    axes[0].set_title('Original Image')
+    axes[0].axis('off')
 
+    # Plot the mask
+    c_limage = c_limage.detach()
+    c_limage = F.to_pil_image(c_limage)
+    axes[1].imshow(c_limage)
+    axes[1].set_title('Image & Label')
+    axes[1].axis('off')
 
-# Generator Class
-class Generator(nn.Module):
+    # Plot the segmented mask
+    fake_img = fake_img.detach()
+    fake_img = F.to_pil_image(fake_img)
+    axes[0].imshow(fake_img)
+    axes[2].set_title('Generated Image')
+    axes[2].axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+class CGANTrainer():
     def __init__(self):
-        super(Generator, self).__init__()
-
-        self.label_embed = nn.Sequential(
-            nn.Embedding(7, 100),
-            nn.Linear(100, 32*32)
-        )
-
-        self.sketch = nn.Sequential(
-            nn.Conv2d(1, 4, kernel_size=3, padding=1),
-            nn.MaxPool2d(2), # 4*32*32
-            nn.ReLU(),
-
-            nn.Conv2d(4, 8, kernel_size=3, padding=1),
-            nn.ReLU() # 8*32*32
-        )
-
-        self.model = nn.Sequential(
-            # 9 * 32 * 32
-            nn.Conv2d(9, 8, kernel_size=3, padding=1),
-            nn.MaxPool2d(2),
-            nn.ReLU(),
-            # 8 * 16 * 16
-            nn.Conv2d(8, 16, kernel_size=3, padding=1),
-            nn.MaxPool2d(4),
-            nn.ReLU(),
-            # 16 * 4 * 4
-            nn.ConvTranspose2d(16, 64*8, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(64*8),
-            nn.ReLU(),
-            # 64*8 * 8 * 8
-            nn.ConvTranspose2d(64*8, 64*4, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(64*4),
-            nn.ReLU(),
-            # 64*4 * 16 * 16
-            nn.ConvTranspose2d(64*4, 64*2, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(64*2),
-            nn.ReLU(),
-            # 64*2 * 32 * 32
-            nn.ConvTranspose2d(64*2, 3, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.Tanh()
-            # 3 * 32 * 32
-        )
-
-    def forward(self, input):
-        sketch, label = input # label: (8,7)
-
-        label_output = self.label_embed(label) # (32*32)
-        label_output = label_output.view(-1, 1, 32, 32)
-
-        sketch_output = self.sketch(sketch)
-        sketch_output = sketch_output.view(-1, 8, 32, 32)
-
-        concat = torch.cat((label_output, sketch_output), 1)
-
-        return self.model(concat)
-
-# Discriminator
-class Discriminator(nn.Module):
-    def __init__(self):
-        super(Discriminator, self).__init__()
-
+        super().__init__()
+        self.optimizers = []
+        self.lamb = 10.0
+        
         self.label_embed = nn.Sequential(
             nn.Embedding(7, 100),
             nn.Linear(100, 64*64)
-        )
+        ).to(device)
 
-        self.model = nn.Sequential(
-            # 4*64*64
-            nn.Conv2d(4, 32, kernel_size=3, padding=1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+        self.genA = ResnetGenerator(input_nc=3, output_nc=3).to(device)
+        self.genB = ResnetGenerator(input_nc=3, output_nc=3).to(device)
 
-            # 32*64*64
-            nn.Conv2d(32, 64, kernel_size=3, padding=1, stride=2, bias=False),
-            nn.BatchNorm2d(64, momentum=0.1,  eps=0.8),
-            nn.LeakyReLU(0.2, inplace=True),
+        self.disA = NLayerDiscriminator(input_nc=3).to(device)
+        self.disB = NLayerDiscriminator(input_nc=3).to(device)
 
-            # 64*32*32
-            nn.Conv2d(64, 64*2, kernel_size=5, padding=2, stride=2, bias=False),
-            nn.BatchNorm2d(64*2, momentum=0.1,  eps=0.8),
-            nn.LeakyReLU(0.2, inplace=True),
+        self.fakeA_pool = ImagePool(pool_size=50)
+        self.fakeB_pool = ImagePool(pool_size=50)
 
-            # 64*2 * 16 * 16
-            nn.Conv2d(64*2, 64*4, kernel_size=5, padding=2, stride=2, bias=False),
-            nn.AvgPool2d(2),
-            nn.BatchNorm2d(64*4, momentum=0.1,  eps=0.8),
-            nn.LeakyReLU(0.2, inplace=True),
+        self.GANloss = nn.BCEWithLogitsLoss()
+        self.cycleLoss = nn.L1Loss()
 
-            # 64*4 * 4 * 4
-            nn.Conv2d(64*4, 64*8, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(64*8, momentum=0.1, eps=0.8),
-            nn.MaxPool2d(2),
-            nn.LeakyReLU(0.2, inplace=True),
+        self.optimizer_G = torch.optim.Adam(itertools.chain(self.genA.parameters(), self.genB.parameters()), lr=0.0002, betas=(0.5, 0.999))
+        self.optimizer_D = torch.optim.Adam(itertools.chain(self.disA.parameters(), self.disB.parameters()), lr=0.0002, betas=(0.5, 0.999))
+        self.optimizers.append(self.optimizer_G)
+        self.optimizers.append(self.optimizer_D)
 
-            # 64*8 * 2 * 2
-            nn.Flatten(),
-            nn.Dropout(0.4),
+    
+    def set_requires_grad(self, nets, requires_grad=False):
+        """Set requies_grad=False for all the networks to avoid unnecessary computations
+        Parameters:
+            nets (network list)   -- a list of networks
+            requires_grad (bool)  -- whether the networks require gradients or not
+        """
+        if not isinstance(nets, list):
+            nets = [nets]
+        for net in nets:
+            if net is not None:
+                for param in net.parameters():
+                    param.requires_grad = requires_grad
+    
+    def backward_D_basic(self, netD, real, fake):
+        """Calculate GAN loss for the discriminator
 
-            nn.Linear(2048, 512),
-            nn.Tanh(),
+        Parameters:
+            netD (network)      -- the discriminator D
+            real (tensor array) -- real images
+            fake (tensor array) -- images generated by a generator
 
-            nn.Linear(512, 1),
-            nn.Sigmoid()
-        )
+        Return the discriminator loss.
+        We also call loss_D.backward() to calculate the gradients.
+        """
+        # Real
+        pred_real = netD(real)
+        self.real_target = self.real_target.expand_as(pred_real)
+        loss_D_real = self.GANloss(pred_real, self.real_target)
+        
+        # Fake
+        pred_fake = netD(fake.detach())
+        self.fake_target = self.real_target.expand_as(pred_fake)
+        loss_D_fake = self.GANloss(pred_fake, self.fake_target)
+        
+        # Combined loss and calculate gradients
+        loss_D = (loss_D_real + loss_D_fake) * 0.5
+        loss_D.backward(retain_graph=True)
 
-    def forward(self, input):
-        img, label = input
+        return loss_D
 
-        label_output = self.label_embed(label)
-        label_output = label_output.view(-1, 1, 64, 64)
+    def backward_disA(self):
+        """Calculate GAN loss for discriminator disA"""
+        fake_B = self.fakeB_pool.query(self.fake_sketch)
+        self.loss_disA = self.backward_D_basic(self.disA, self.concat_ls, fake_B)
 
-        concat = torch.cat((img, label_output), dim=1)
+    def backward_disB(self):
+        """Calculate GAN loss for discriminator disB"""
+        fake_A = self.fakeA_pool.query(self.fake_image)
+        self.loss_disB = self.backward_D_basic(self.disB, self.concat_li, fake_A)
+    
+    # Generator Backpropagation Function
+    def backward_G(self):
+        """Calculate the loss for generators genA and genB"""
 
-        return self.model(concat)
+        # GAN loss disA(genA(image))
+        prediction = self.disA(self.fake_sketch)
+        self.real_target = self.real_target.expand_as(prediction)
+        self.genA_Loss = self.GANloss(prediction, self.real_target)
+        
+        # GAN loss disB(genB(sketch))
+        prediction = self.disB(self.fake_image)
+        self.real_target = self.real_target.expand_as(prediction)
+        self.genB_Loss = self.GANloss(prediction, self.real_target)
 
+        # Forward cycle loss || genB(genA(image)) - image ||
+        self.loss_cycle_A = self.cycleLoss(self.rec_image, self.concat_li) * self.lamb
+        # Backward cycle loss || genA(genB(sketch)) - sketch ||
+        self.loss_cycle_B = self.cycleLoss(self.rec_sketch, self.concat_ls) * self.lamb
 
-gen = Generator().to(device)
+        # combined loss and calculate gradients
+        self.loss_G = self.genA_Loss + self.genB_Loss + self.loss_cycle_A + self.loss_cycle_B
 
-disc = Discriminator()
-disc = disc.to(device)
+        self.loss_G.backward(retain_graph=True)
 
-loss_fn = nn.BCELoss()
-learning_rate = 0.0002
+    def train(self, dataloader, epochs=10):
+        for epoch in range(1, epochs+1):
+            total_dloss = 0.0
+            total_gloss = 0.0
 
-gen_opt = torch.optim.Adam(gen.parameters(), lr = learning_rate, betas=(0.5, 0.999))
-disc_opt = torch.optim.Adam(disc.parameters(), lr = learning_rate, betas=(0.5, 0.999))
+            b_dloss = 0.0
+            b_gloss = 0.0
+        
 
-generator_losses = []
-discriminator_losses = []
-epochs = 5
-
-# writer_real = SummaryWriter(f"tboard/real")
-# writer_fake = SummaryWriter(f"tboard/fake")
-
-step = 0
-
-print("Training Started")
-for epoch in range(1, epochs+1):
-    total_dloss = 0.0
-    total_gloss = 0.0
-
-    b_dloss = 0.0
-    b_gloss = 0.0
-
-    for index, (labels, image, sketch) in tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
-        # real image shape: [64 x 3 x 64 x 64]
-        image = image.to(device)
-        labels = labels.to(device)
-        sketch = sketch.to(device)
-        # labels = labels.unsqueeze(1).long()
-        # labels shape: [64 x 1]
-
-        disc_opt.zero_grad()
-
-        fake = gen((sketch, labels))
-        # fake image output shape: [8 x 1 x 32 x 32]
-
-        fake = fake.detach()
-        # fake = torch.repeat_interleave(fake, 3, dim=1)
-
-        fake_image_pred = disc((fake, labels))
-        # fake prediction shape [8 x 1]
-
-        real_image_pred = disc((image, labels))
-        # real prediction shape [8 x 1]
-
-
-        real_target = torch.ones(image.size(0), 1).to(device)
-        fake_target = torch.zeros(image.size(0), 1).to(device)
-
-        disc_real_loss = loss_fn(real_image_pred, real_target)
-        disc_fake_loss = loss_fn(fake_image_pred, fake_target)
-        disc_loss = (disc_fake_loss + disc_real_loss) / 2
-
-        disc_loss.backward(retain_graph=True)
-        disc_opt.step()
-
-        total_dloss += disc_loss.item()
-        b_dloss += disc_loss.item()
-
-        discriminator_losses += [disc_loss.item()]
-
-        gen_opt.zero_grad()
-
-        gen_loss = loss_fn(disc((fake, labels)), real_target)
-        gen_loss.backward()
-        gen_opt.step()
-
-        total_gloss += gen_loss.item()
-        b_gloss += gen_loss.item()
-
-        generator_losses += [gen_loss.item()]
-
-        if index % 100 == 0:
-            step +=1
-
-            avg_bdloss = b_dloss / 100
-            avg_bgloss = b_gloss / 100
-
-            print(f"Average D Loss: {avg_bdloss}, Average G Loss: {avg_bgloss}\n")
-
-            b_dloss, b_gloss = 0.0, 0.0
+            for index, input in tqdm(enumerate(dataloader), total=len(dataloader)):
+                self.label, self.image, self.sketch = input 
+                self.sketch = torch.repeat_interleave(self.sketch, 3, dim=1)
 
 
-            # grid_real = torchvision.utils.make_grid(image[:60], nrow=15,  normalize=True)
-            # grid_fake = torchvision.utils.make_grid(fake[:60], nrow=15, normalize=True)
+                self.label = self.label.to(device)
+                self.image = self.image.to(device)
+                self.sketch = self.sketch.to(device)
 
-    avg_dloss = total_dloss / len(train_dataloader)
-    avg_gloss = total_gloss / len(train_dataloader)
+                
+                label_output = self.label_embed(self.label) # (32*32)
+                label_output = label_output.view(-1, 1, 64, 64)
 
-    print(f"Average D Loss: {avg_dloss}, Average G Loss: {avg_gloss}\n")
+                self.concat_li = self.image
+                self.concat_ls = self.sketch
+
+                self.real_target = torch.ones(self.image.size(0), 1, 1, 1).to(device)
+                self.fake_target = torch.zeros(self.image.size(0), 1, 1, 1).to(device)
+
+                self.fake_sketch = self.genA(self.concat_li)
+                self.rec_image = self.genB(self.fake_sketch)
+
+                self.fake_image = self.genB(self.concat_ls)
+                self.rec_sketch = self.genA(self.fake_image)
+
+                # Freeze Discriminator to avoid unnecessary calculations
+                self.set_requires_grad([self.disA, self.disB], False)
+
+                # Start training Generator (genA & genB)
+                self.optimizer_G.zero_grad()
+                self.backward_G()
+                self.optimizer_G.step()
+
+                # Start training Discriminator (disA & disB)
+                self.set_requires_grad([self.disA, self.disB], True)
+                self.optimizer_D.zero_grad()
+                self.backward_disA()
+                self.backward_disB()
+          
+                self.optimizer_D.step()
+
+                total_dloss += (self.loss_disA + self.loss_disB) / 2
+                total_gloss += self.loss_G
+            
+        
+            avg_dloss = total_dloss / len(dataloader)
+            avg_gloss = total_gloss / len(dataloader)
+
+            print(f"{epoch}/{epochs} Average D Loss: {avg_dloss}, Average G Loss: {avg_gloss}\n")
