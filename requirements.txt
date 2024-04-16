@@ -1,7 +1,3 @@
-numpy==1.26.4
-pandas==2.2.1
-torchvision==0.17.2
-pillow==10.3.0
-torch==2.2.2
-tqdm==4.66.2
-
+torch-fidelity==0.3.0
+wandb==0.16.6
+torchmetrics==1.3.2

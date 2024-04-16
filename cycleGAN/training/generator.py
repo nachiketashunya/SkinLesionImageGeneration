@@ -2,6 +2,85 @@ import torch
 import torch.nn as nn
 import functools
 
+class UnetGenerator(nn.Module):
+    """Create a Unet-based generator"""
+
+    def __init__(self):
+        super(UnetGenerator, self).__init__()
+        # construct unet structure
+        input_nc = 10
+        output_nc = 10
+        norm_layer = nn.InstanceNorm2d
+
+        unet_block = UnetSkipConnectionBlock(64 * 8, 64 * 8, input_nc=None, submodule=None, innermost=True)  # add the innermost layer
+        for i in range(2):    # add intermediate layers with 64 * 8 filters
+            unet_block = UnetSkipConnectionBlock(64 * 8, 64 * 8, input_nc=None, submodule=unet_block, use_dropout=True)
+        # gradually reduce the number of filters from 64 * 8 to 64
+        unet_block = UnetSkipConnectionBlock(64 * 4, 64 * 8, input_nc=None, submodule=unet_block)
+        unet_block = UnetSkipConnectionBlock(64 * 2, 64 * 4, input_nc=None, submodule=unet_block)
+        unet_block = UnetSkipConnectionBlock(64, 64 * 2, input_nc=None, submodule=unet_block)
+        self.model = UnetSkipConnectionBlock(output_nc, 64, input_nc=input_nc, submodule=unet_block, outermost=True)  # add the outermost layer
+
+    def forward(self, input):
+        """Standard forward"""
+        return self.model(input)
+
+
+class UnetSkipConnectionBlock(nn.Module):
+    def __init__(self, outer_nc, inner_nc, input_nc=None,
+                 submodule=None, outermost=False, innermost=False, use_dropout=False):
+
+        super(UnetSkipConnectionBlock, self).__init__()
+
+        self.outermost = outermost
+        use_bias = True 
+        norm_layer = nn.InstanceNorm2d
+
+        if input_nc == None:
+            input_nc = outer_nc
+
+        downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4,
+                             stride=2, padding=1, bias=use_bias)
+        downrelu = nn.LeakyReLU(0.2, True)
+        downnorm = norm_layer(inner_nc)
+        uprelu = nn.ReLU(True)
+        upnorm = norm_layer(outer_nc)
+
+        if outermost:
+            upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1)
+            down = [downconv]
+            up = [uprelu, upconv, nn.Tanh()]
+            model = down + [submodule] + up
+        elif innermost:
+            upconv = nn.ConvTranspose2d(inner_nc, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1, bias=use_bias)
+            down = [downrelu, downconv]
+            up = [uprelu, upconv, upnorm]
+            model = down + up
+        else:
+            upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc,
+                                        kernel_size=4, stride=2,
+                                        padding=1, bias=use_bias)
+            down = [downrelu, downconv, downnorm]
+            up = [uprelu, upconv, upnorm]
+
+            if use_dropout:
+                model = down + [submodule] + up + [nn.Dropout(0.5)]
+            else:
+                model = down + [submodule] + up
+
+        self.model = nn.Sequential(*model)
+
+    def forward(self, x):
+        if self.outermost:
+            return self.model(x)
+        else: 
+            return torch.cat([x, self.model(x)], 1)
+
+
 class ResnetGenerator(nn.Module):
     def __init__(self, input_nc=3, output_nc=3, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, padding_type='reflect'):
         """Construct a Resnet-based generator
