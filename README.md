@@ -33,5 +33,4 @@ The dataset used for training and evaluation is the ISIC (International Skin Ima
 
 The results of training and evaluation are logged using `wandb` (Weights & Biases) for easy visualization and tracking of metrics.
 
-## License
 
