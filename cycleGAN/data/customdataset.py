@@ -18,6 +18,18 @@ TEST_DATA_DIR = "data/Assignment_4/Test/Test"
 TRAIN_SKETCH_DIR = "data/Assignment_4/Train/Contours"
 TEST_SKETCH_DIR = "data/Assignment_4/Test/Test_contours"
 
+# sys.path.append("/iitjhome/m23csa016/DLASS4")
+DATA_DIR = "/scratch/data/m23csa016/"
+
+TRAIN_LABELS = os.path.join(DATA_DIR, "isic/Train/Train_labels.csv")
+TEST_LABELS = os.path.join(DATA_DIR, "isic/Test/Test_Labels.csv")
+
+TRAIN_DATA_DIR = os.path.join(DATA_DIR, "isic/Train/Train_data")
+TEST_DATA_DIR = os.path.join(DATA_DIR, "isic/Test/Test")
+
+TRAIN_SKETCH_DIR = os.path.join(DATA_DIR, "isic/Train/Contours")
+TEST_SKETCH_DIR = os.path.join(DATA_DIR, "isic/Test/Test_contours")
+
 # Create Dataset
 class ISICDataset(Dataset):
     def __init__(self, datadir, csvpath, sketchdir, transform=None):
@@ -27,7 +39,7 @@ class ISICDataset(Dataset):
         self.transform = transform
 
     def __len__(self):
-        return len(self.csv[:300])
+        return len(self.csv[:4])
 
     def __getitem__(self, index):
         img_path = os.path.join(self.datadir, self.csv.iloc[index, 0] + ".jpg")

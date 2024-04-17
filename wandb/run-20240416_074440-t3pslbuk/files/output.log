@@ -1,0 +1,17 @@
+/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: Metric `InceptionScore` will save all extracted features in buffer. For large datasets this may lead to large memory footprint.
+  warnings.warn(*args, **kwargs)  # noqa: B028
+  0%|                                                         | 0/1 [00:00<?, ?it/s]/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/amp/autocast_mode.py:250: UserWarning: User provided device_type of 'cuda', but CUDA is not available. Disabling
+  warnings.warn(
+/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/nn/modules/instancenorm.py:80: UserWarning: input's size at dim=1 does not match num_features. You can silence this warning by not passing in num_features, which is not used because affine=False
+  warnings.warn(f"input's size at dim={feature_dim} does not match num_features. "
+100%|█████████████████████████████████████████████████| 1/1 [00:58<00:00, 58.73s/it]
+0/1 Batch Dis Loss: 0.04080215469002724, Batch Gen Loss: 23.285146713256836
+Traceback (most recent call last):
+  File "/home/nachiketa/DLASS4L/cycleGAN/training/train.py", line 49, in <module>
+    cgantrainer.train(train_dataloader, config['batch_size'])
+  File "/home/nachiketa/DLASS4L/cycleGAN/training/trainer.py", line 274, in train
+    show(dis_img, dis_sket, dis_fsket, dis_fimg)
+  File "/home/nachiketa/DLASS4L/cycleGAN/utils/visualization_utils.py", line 11, in show
+    axes[1].imshow(s_img)
+                   ^^^^^
+NameError: name 's_img' is not defined. Did you mean: 'r_img'?

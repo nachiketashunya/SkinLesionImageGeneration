@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import torchvision.transforms.functional as F
 
-def show(r_img, s_image, c_limage, fake_img):
+def show(r_img, s_img, c_limage, fake_img):
     fig, axes = plt.subplots(1, 4, figsize=(10, 7))
 
     axes[0].imshow(r_img)

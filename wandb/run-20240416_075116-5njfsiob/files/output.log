@@ -1,0 +1,29 @@
+/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: Metric `InceptionScore` will save all extracted features in buffer. For large datasets this may lead to large memory footprint.
+  warnings.warn(*args, **kwargs)  # noqa: B028
+Traceback (most recent call last):
+  File "/home/nachiketa/DLASS4L/cycleGAN/training/train.py", line 57, in <module>
+    cgantrainer.load_checkpoints("models/epoch_30.pth")
+  File "/home/nachiketa/DLASS4L/cycleGAN/training/trainer.py", line 81, in load_checkpoints
+    checkpoint = torch.load(file)
+                 ^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/serialization.py", line 1026, in load
+    return _load(opened_zipfile,
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/serialization.py", line 1438, in _load
+    result = unpickler.load()
+             ^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/serialization.py", line 1408, in persistent_load
+    typed_storage = load_tensor(dtype, nbytes, key, _maybe_decode_ascii(location))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/serialization.py", line 1382, in load_tensor
+    wrap_storage=restore_location(storage, location),
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/serialization.py", line 391, in default_restore_location
+    result = fn(storage, location)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/serialization.py", line 266, in _cuda_deserialize
+    device = validate_cuda_device(location)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/serialization.py", line 250, in validate_cuda_device
+    raise RuntimeError('Attempting to deserialize object on a CUDA '
+RuntimeError: Attempting to deserialize object on a CUDA device but torch.cuda.is_available() is False. If you are running on a CPU-only machine, please use torch.load with map_location=torch.device('cpu') to map your storages to the CPU.

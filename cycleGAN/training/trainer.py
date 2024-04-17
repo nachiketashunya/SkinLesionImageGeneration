@@ -78,7 +78,7 @@ class CGANTrainer():
         }, os.path.join(MODEL_SAVE_DIR, f"epoch_{epoch}.pth"))
     
     def load_checkpoints(self, file):
-        checkpoint = torch.load(file)
+        checkpoint = torch.load(file, map_location=device)
         
         self.genA.load_state_dict(checkpoint['genA_state_dict'])
         self.genB.load_state_dict(checkpoint['genB_state_dict'])
@@ -336,4 +336,4 @@ class CGANTrainer():
             ]
         })
 
-        show(dis_img, dis_sket, dis_fsket, dis_fimg)
+        # show(dis_img, dis_sket, dis_fsket, dis_fimg)

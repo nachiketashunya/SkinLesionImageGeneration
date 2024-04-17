@@ -1,0 +1,7 @@
+/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: Metric `InceptionScore` will save all extracted features in buffer. For large datasets this may lead to large memory footprint.
+  warnings.warn(*args, **kwargs)  # noqa: B028
+  0%|                                                         | 0/1 [00:00<?, ?it/s]/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/amp/autocast_mode.py:250: UserWarning: User provided device_type of 'cuda', but CUDA is not available. Disabling
+  warnings.warn(
+Avg FID: 7.140525326576608e-08
+Avg IS: 0.9999998807907104
+100%|█████████████████████████████████████████████████| 1/1 [00:06<00:00,  6.61s/it]

@@ -1,0 +1,60 @@
+{
+    "os": "Linux-5.15.146.1-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+    "python": "3.12.2",
+    "heartbeatAt": "2024-04-16T02:21:18.870330",
+    "startedAt": "2024-04-16T02:21:16.289609",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home/nachiketa/DLASS4L/cycleGAN/training/train.py",
+    "codePathLocal": "cycleGAN/training/train.py",
+    "codePath": "cycleGAN/training/train.py",
+    "git": {
+        "remote": "git@github.com-personal:nachiketashunya/DLASS4.git",
+        "commit": "444911215cf58e72c6804f564a49d0cea5730861"
+    },
+    "email": "m23csa016@iitj.ac.in",
+    "root": "/home/nachiketa/DLASS4L",
+    "host": "DESKTOP-CI3L38B",
+    "username": "nachiketa",
+    "executable": "/home/nachiketa/miniconda3/envs/naconda/bin/python",
+    "cpu_count": 2,
+    "cpu_count_logical": 4,
+    "cpu_freq": {
+        "current": 2304.001,
+        "min": 0.0,
+        "max": 0.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 2304.001,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2304.001,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2304.001,
+            "min": 0.0,
+            "max": 0.0
+        },
+        {
+            "current": 2304.001,
+            "min": 0.0,
+            "max": 0.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 1006.853931427002,
+            "used": 22.85350799560547
+        }
+    },
+    "memory": {
+        "total": 5.721584320068359
+    }
+}

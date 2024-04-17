@@ -1,0 +1,38 @@
+/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: Metric `InceptionScore` will save all extracted features in buffer. For large datasets this may lead to large memory footprint.
+  warnings.warn(*args, **kwargs)  # noqa: B028
+  0%|                                                         | 0/1 [00:00<?, ?it/s]/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/amp/autocast_mode.py:250: UserWarning: User provided device_type of 'cuda', but CUDA is not available. Disabling
+  warnings.warn(
+/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/nn/modules/instancenorm.py:80: UserWarning: input's size at dim=1 does not match num_features. You can silence this warning by not passing in num_features, which is not used because affine=False
+  warnings.warn(f"input's size at dim={feature_dim} does not match num_features. "
+100%|█████████████████████████████████████████████████| 1/1 [00:53<00:00, 53.07s/it]
+0/1 Batch Dis Loss: 0.0485856793820858, Batch Gen Loss: 22.208417892456055
+  0%|                                                         | 0/1 [00:00<?, ?it/s]
+1/16 Average D Loss: 0.0485856793820858, Average G Loss: 22.208417892456055
+100%|████████████████████████████████████████████████| 1/1 [02:02<00:00, 122.86s/it]
+Traceback (most recent call last):
+  File "/home/nachiketa/DLASS4L/cycleGAN/training/train.py", line 49, in <module>
+    cgantrainer.train(train_dataloader, config['batch_size'])
+  File "/home/nachiketa/DLASS4L/cycleGAN/training/trainer.py", line 192, in train
+    for index, input in tqdm(enumerate(dataloader), total=len(dataloader)):
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/tqdm/std.py", line 1181, in __iter__
+    for obj in iterable:
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 631, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 1318, in _next_data
+    self._shutdown_workers()
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 1443, in _shutdown_workers
+    w.join(timeout=_utils.MP_STATUS_CHECK_INTERVAL)
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/multiprocessing/process.py", line 149, in join
+    res = self._popen.wait(timeout)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/multiprocessing/popen_fork.py", line 40, in wait
+    if not wait([self.sentinel], timeout):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/multiprocessing/connection.py", line 1135, in wait
+    ready = selector.select(timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/nachiketa/miniconda3/envs/naconda/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
