@@ -2,6 +2,8 @@
 
 This repository contains the implementation of a CycleGAN model for sketch-to-image translation incorporating label information.
 
+Preview: [lesionGen](https://huggingface.co/spaces/nachi1326/lesionGeneration)
+
 ## Description
 
 The repository consists of the following components:
